@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:cache="http://www.springframework.org/schema/cache"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+	http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://www.springframework.org/schema/cache
+    http://www.springframework.org/schema/cache/spring-cache.xsd">
+
+	<mvc:annotation-driven />
+	<context:annotation-config />
+	<context:component-scan base-package="com.github.stuxuhai.zkmonitor" />
+	<mvc:resources mapping="/resources/**" location="/resources/" cache-period="31556926" />
+
+	<!-- 事务 -->
+	<tx:annotation-driven proxy-target-class="true" transaction-manager="transactionManager" />
+
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="hikariDataSource" />
+	</bean>
+
+	<!-- HikariCP -->
+	<bean id="hikariDataSource" class="com.zaxxer.hikari.HikariDataSource"
+		destroy-method="shutdown">
+		<constructor-arg>
+			<bean class="com.zaxxer.hikari.HikariConfig">
+				<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+				<property name="jdbcUrl" value="jdbc:mysql://127.0.0.1/zkmonitor" />
+				<property name="username" value="user" />
+				<property name="password" value="password" />
+				<property name="connectionTestQuery" value="SELECT 1" />
+				<property name="connectionTimeout" value="30000" />
+				<property name="idleTimeout" value="600000" />
+				<property name="maxLifetime" value="1800000" />
+				<property name="maximumPoolSize" value="10" />
+				<property name="minimumIdle" value="3" />
+			</bean>
+		</constructor-arg>
+	</bean>
+
+	<!-- MyBatis -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="hikariDataSource" />
+		<property name="mapperLocations" value="classpath*:sqlmap/**/*.xml" />
+	</bean>
+
+	<!-- 注册Maper -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.github.stuxuhai.zkmonitor.dao.generate" />
+	</bean>
+
+	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg index="0" ref="sqlSessionFactory" />
+	</bean>
+
+	<!-- freemaker -->
+	<bean id="freemarkerConfiguration"
+		class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+		<property name="location" value="classpath:freemarker.properties" />
+	</bean>
+
+	<bean id="freemarkerConfigurer"
+		class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+		<property name="templateLoaderPath" value="/WEB-INF/ftl/" />
+		<property name="defaultEncoding" value="UTF-8" />
+		<property name="freemarkerSettings" ref="freemarkerConfiguration" />
+	</bean>
+
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.freemarker.FreeMarkerView" />
+		<property name="suffix" value=".ftl" />
+		<property name="cache" value="true" />
+		<property name="contentType" value="text/html;charset=UTF-8" />
+	</bean>
+
+</beans>
